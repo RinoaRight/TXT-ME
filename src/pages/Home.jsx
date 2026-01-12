@@ -148,7 +148,7 @@ export default function Home() {
 
         <div className="post-content-wrapper">
         <div className="post-content">
-        <MarkdownRenderer content={post.content} />
+        <MarkdownRenderer content={post.content} postId={post.postId} />
         </div>
         </div>
 
