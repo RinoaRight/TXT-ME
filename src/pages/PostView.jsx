@@ -9,6 +9,7 @@ const CommentItem = ({
   comment,
   level = 0,
   user,
+  isLoading,
   replyTo,
   setReplyTo,
   replyText,
@@ -73,7 +74,7 @@ const CommentItem = ({
       {replyTo === comment.commentId ? 'Отмена' : 'Ответить'}
       </button>
     )}
-    {user && user.username === comment.username && user.role === 'admin' && (
+    {user && !isLoading && (user.username === comment.username || user.role === 'admin') && (
       <button
       onClick={() => handleDeleteComment(comment.commentId)}
       className="btn"
@@ -166,6 +167,7 @@ const CommentItem = ({
         comment={reply}
         level={level + 1}
         user={user}
+        isLoading={isLoading}
         replyTo={replyTo}
         setReplyTo={setReplyTo}
         replyText={replyText}
@@ -193,7 +195,7 @@ export default function PostView() {
   const [replyTo, setReplyTo] = useState(null);
   const [replyText, setReplyText] = useState('');
   const [loading, setLoading] = useState(true);
-  const user = useAuth();
+  const { user, isLoading } = useAuth();
   const navigate = useNavigate();
   const [avatars, setAvatars] = useState([]);
   const [selectedCommentAvatarId, setSelectedCommentAvatarId] = useState(null);
@@ -307,6 +309,7 @@ export default function PostView() {
 
   const handleDeleteComment = async (commentId) => {
     if (!confirm('Удалить комментарий?')) return;
+    if (isLoading || !user) return;
     try {
       await commentsAPI.delete(postId, commentId);
       loadComments();
@@ -319,6 +322,7 @@ export default function PostView() {
 
   const handleDeletePost = async () => {
     if (!confirm('Удалить пост?')) return;
+    if (isLoading || !user || !post) return;
     try {
       await postsAPI.delete(postId);
       navigate('/');
@@ -369,7 +373,7 @@ export default function PostView() {
     return roots;
   };
 
-  if (loading) {
+  if (loading || isLoading) {
     return <div className="loading">...</div>;
   }
 
@@ -453,81 +457,81 @@ export default function PostView() {
       Поделиться
       </button>
       <span className="post-flag-placeholder">Флаг</span>
-  {user && user.username === post.username && (
-    <>
-    <Link to={`/posts/${postId}/edit`} className="post-comment-link">
-    Редактировать
-    </Link>
-    <button onClick={handleDeletePost} className="post-comment-link" style={{ color: '#dc2626' }}>
-    Удалить
-    </button>
-    </>
-  )}
-  </div>
-  </div>
-  </div>
+      {user && !isLoading && (user.username === post.username ) && (
+        <>
+        <Link to={`/posts/${postId}/edit`} className="post-comment-link">
+        Редактировать
+        </Link>
+        <button onClick={handleDeletePost} className="post-comment-link" style={{ color: '#dc2626' }}>
+        Удалить
+        </button>
+        </>
+      )}
+      </div>
+      </div>
+      </div>
 
-  {user ? (
-    <div className="comment-form" id="comment-form">
-    <h3>Добавить комментарий</h3>
-    <form onSubmit={handleAddComment}>
-    {avatars.length === 0 ? null : (
-      <div style={{ marginBottom: '15px' }}>
-      <label
-      style={{
-        fontSize: '0.875rem',
-        marginBottom: '8px',
-        display: 'block'
-      }}
-      >
-      Аватар для комментария:
-      </label>
-      <div className="avatar-selector">
-      {avatars.map((avatar) => (
-        <div
-        key={avatar.avatarId}
-        className={`avatar-option ${
-          selectedCommentAvatarId === avatar.avatarId ? 'selected' : ''
-        }`}
-        onClick={() => setSelectedCommentAvatarId(avatar.avatarId)}
-        >
-        <img src={avatar.dataUrl} alt="Avatar" />
-        {avatar.avatarId === defaultAvatarId && (
-          <span className="avatar-badge">•</span>
+      {user ? (
+        <div className="comment-form" id="comment-form">
+        <h3>Добавить комментарий</h3>
+        <form onSubmit={handleAddComment}>
+        {avatars.length === 0 ? null : (
+          <div style={{ marginBottom: '15px' }}>
+          <label
+          style={{
+            fontSize: '0.875rem',
+            marginBottom: '8px',
+            display: 'block'
+          }}
+          >
+          Аватар для комментария:
+          </label>
+          <div className="avatar-selector">
+          {avatars.map((avatar) => (
+            <div
+            key={avatar.avatarId}
+            className={`avatar-option ${
+              selectedCommentAvatarId === avatar.avatarId ? 'selected' : ''
+            }`}
+            onClick={() => setSelectedCommentAvatarId(avatar.avatarId)}
+            >
+            <img src={avatar.dataUrl} alt="Avatar" />
+            {avatar.avatarId === defaultAvatarId && (
+              <span className="avatar-badge">•</span>
+            )}
+            </div>
+          ))}
+          </div>
+          </div>
         )}
+        <textarea
+        value={newComment}
+        onChange={(e) => setNewComment(e.target.value)}
+        placeholder="Текст комментария..."
+        className="comment-textarea"
+        />
+        <button type="submit" className="btn btn-primary">
+        Отправить
+        </button>
+        </form>
         </div>
-      ))}
-      </div>
-      </div>
-    )}
-    <textarea
-    value={newComment}
-    onChange={(e) => setNewComment(e.target.value)}
-    placeholder="Текст комментария..."
-    className="comment-textarea"
-    />
-    <button type="submit" className="btn btn-primary">
-    Отправить
-    </button>
-    </form>
-    </div>
-  ) : (
-    <div className="comment-form">
-    <p style={{ textAlign: 'center', color: 'var(--muted-foreground)' }}>
-    <Link to="/login" style={{ color: 'var(--primary)' }}>
-    Войдите
-    </Link>{' '}
-    чтобы комментировать
-    </p>
-    </div>
-  )}
+      ) : (
+        <div className="comment-form">
+        <p style={{ textAlign: 'center', color: 'var(--muted-foreground)' }}>
+        <Link to="/login" style={{ color: 'var(--primary)' }}>
+        Войдите
+        </Link>{' '}
+        чтобы комментировать
+        </p>
+        </div>
+      )}
 
-  <div className="comments-section" id="comments-section">
-  <h3>
-  {totalCommentsCount === 0
-    ? 'Комментарии'
-    : totalCommentsCount === 1
-    ? '1 комментарий'
+      <div className="comments-section" id="comments-section">
+      <h3>
+      {totalCommentsCount === 0
+        ? 'Комментарии'
+        : totalCommentsCount === 1
+        ? '1 комментарий'
   : `${totalCommentsCount} комментариев`}
   </h3>
 
@@ -540,6 +544,7 @@ export default function PostView() {
       comment={comment}
       level={0}
       user={user}
+      isLoading={isLoading}
       replyTo={replyTo}
       setReplyTo={setReplyTo}
       replyText={replyText}
