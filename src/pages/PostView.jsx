@@ -154,15 +154,83 @@ const CommentItem = ({
 
     {/* Reply form - существующий код без изменений */}
     {replyTo === comment.commentId && (
-      <div style={{ marginTop: '0.75rem', marginLeft: '1rem', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '1rem' }}>
-      {/* ... ваш существующий код формы ответа ... */}
+      <div className="reply-form">
+      <form onSubmit={(e) => handleAddReply(e, comment.commentId)}>
+      {avatars.length > 0 && (
+        <div style={{ marginBottom: '10px' }}>
+        <label style={{ fontSize: '0.875rem', marginBottom: '5px', display: 'block' }}>
+        Аватар для комментария:
+        </label>
+        <div className="avatar-selector">
+        {avatars.map((avatar) => (
+          <div
+          key={avatar.avatarId}
+          className={`avatar-option ${selectedCommentAvatarId === avatar.avatarId ? 'selected' : ''}`}
+          onClick={() => setSelectedCommentAvatarId(avatar.avatarId)}
+          style={{ width: '40px', height: '40px' }}
+          >
+          <img
+          src={avatar.dataUrl}
+          alt="Avatar"
+          style={{ width: '35px', height: '35px' }}
+          />
+          {avatar.avatarId === defaultAvatarId && (
+            <span className="avatar-badge" style={{ fontSize: '8px' }}>
+            ✓
+            </span>
+          )}
+          </div>
+        ))}
+        <div
+        className={`avatar-option ${selectedCommentAvatarId === null ? 'selected' : ''}`}
+        onClick={() => setSelectedCommentAvatarId(null)}
+        style={{ width: '40px', height: '40px' }}
+        >
+        <div className="avatar-none" style={{ fontSize: '8px' }}>
+        Без аватара
+        </div>
+        </div>
+        </div>
+        </div>
+      )}
+
+      <textarea
+      value={replyText}
+      onChange={(e) => setReplyText(e.target.value)}
+      placeholder="Текст ответа..."
+      className="comment-textarea"
+      style={{ width: '100%', minHeight: '80px', marginBottom: '0.5rem' }}
+      disabled={isLoading}
+      />
+
+      <div className="comment-actions" style={{ display: 'flex', gap: '0.5rem' }}>
+      <button
+      type="submit"
+      className="btn btn-primary"
+      disabled={isLoading || !replyText.trim()}
+      >
+      {isLoading ? 'Отправка...' : 'Отправить'}
+      </button>
+      <button
+      type="button"
+      onClick={() => {
+        setReplyTo(null);
+        setReplyText('');
+      }}
+      className="btn btn-secondary"
+      disabled={isLoading}
+      >
+      Отмена
+      </button>
+      </div>
+      </form>
       </div>
     )}
 
     {/* Replies - существующий код с новыми пропсами */}
-    {comment.replies && comment.replies.length > 0 && (
+    {comment.replies?.length > 0 && (
       <div style={{ marginTop: '0.75rem' }}>
-      {comment.replies.map(reply => (
+      {comment.replies?.map(reply => (
         <CommentItem
         key={reply.commentId}
         comment={reply}
@@ -249,7 +317,7 @@ export default function PostView() {
   const loadComments = async () => {
     try {
       const response = await commentsAPI.getByPost(postId);
-      setComments(response.data.comments);
+      setComments(response.data.comments || []);
     } catch (error) {
       console.error('Failed to load comments:', error);
     }
@@ -259,7 +327,7 @@ export default function PostView() {
     try {
       const response = await profileAPI.getProfile();
       const profile = response.data;
-      setAvatars(profile.avatars);
+      setAvatars(profile.avatars || []);
       setDefaultAvatarId(profile.activeAvatarId);
       setSelectedCommentAvatarId(profile.activeAvatarId);
     } catch (err) {
@@ -432,7 +500,7 @@ export default function PostView() {
     }, 0);
   };
 
-  const commentTree = buildCommentTree(comments);
+  const commentTree = buildCommentTree(comments || []);
   const totalCommentsCount = countAllComments(commentTree);
 
 
@@ -442,7 +510,7 @@ export default function PostView() {
     <div className="post-navigation">
     {prevPost && (
       <Link to={`/posts/${prevPost.postId}`} className="nav-link">
-      ← Предыдущий пост
+      ← Следующий пост
       </Link>
     )}
     <Link to="/" className="nav-link center">
@@ -450,7 +518,7 @@ export default function PostView() {
     </Link>
     {nextPost && (
       <Link to={`/posts/${nextPost.postId}`} className="nav-link">
-      Следующий пост →
+      Предыдущий пост →
       </Link>
     )}
     </div>
@@ -515,7 +583,7 @@ export default function PostView() {
         <div className="comment-form" id="comment-form">
         <h3>Добавить комментарий</h3>
         <form onSubmit={handleAddComment}>
-        {avatars.length === 0 ? null : (
+        {avatars?.length === 0 ? null : (
           <div style={{ marginBottom: '15px' }}>
           <label
           style={{
@@ -527,7 +595,7 @@ export default function PostView() {
           Аватар для комментария:
           </label>
           <div className="avatar-selector">
-          {avatars.map((avatar) => (
+          {avatars?.map((avatar) => (
             <div
             key={avatar.avatarId}
             className={`avatar-option ${
@@ -575,10 +643,10 @@ export default function PostView() {
   : `${totalCommentsCount} комментариев`}
   </h3>
 
-  {commentTree.length === 0 ? (
+  {commentTree?.length === 0 ? (
     <div className="no-comments">Пока нет комментариев</div>
   ) : (
-    commentTree.map(comment => (
+    commentTree?.map(comment => (
       <CommentItem
       key={comment.commentId}
       comment={comment}
@@ -612,7 +680,7 @@ export default function PostView() {
   <div className="post-navigation">
   {prevPost && (
     <Link to={`/posts/${prevPost.postId}`} className="nav-link">
-    ← Предыдущий пост
+    ← Следующий пост
     </Link>
   )}
   <Link to="/" className="nav-link center">
@@ -620,7 +688,7 @@ export default function PostView() {
   </Link>
   {nextPost && (
     <Link to={`/posts/${nextPost.postId}`} className="nav-link">
-    Следующий пост →
+    Предыдущий пост →
     </Link>
   )}
   </div>
